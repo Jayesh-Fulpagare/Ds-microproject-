@@ -1,0 +1,203 @@
+
+import java.util.Scanner;
+import java.util.Stack;
+
+public class StackCalculator {
+
+    // Check operator precedence
+    public static int precedence(char op) {
+        if (op == '*' || op == '/')
+            return 2;
+
+        if (op == '+' || op == '-')
+            return 1;
+
+        return 0;
+    }
+
+    // Perform arithmetic operations
+    public static double applyOp(char op, double b, double a) {
+
+        switch (op) {
+            case '+':
+                return a + b;
+
+            case '-':
+                return a - b;
+
+            case '*':
+                return a * b;
+
+            case '/':
+                if (b == 0)
+                    throw new ArithmeticException("Division by zero");
+                return a / b;
+        }
+
+        return 0;
+    }
+
+    // Calculate exponential and logarithm
+    public static double applyFunction(String function, double x) {
+
+        switch (function) {
+            case "e^":
+                return Math.exp(x);
+
+            case "log":
+                if (x <= 0)
+                    throw new ArithmeticException("Log requires a positive number");
+                return Math.log(x);
+        }
+
+        return 0;
+    }
+
+    // Evaluate the complete expression
+    public static double evaluate(String expression) {
+
+        Stack<Double> numbers = new Stack<>();
+        Stack<Character> operators = new Stack<>();
+
+        for (int i = 0; i < expression.length(); i++) {
+
+            char ch = expression.charAt(i);
+
+            if (ch == ' ')
+                continue;
+
+            // Read numbers
+            if (Character.isDigit(ch) || ch == '.') {
+
+                StringBuilder number = new StringBuilder();
+
+                while (i < expression.length() &&
+                      (Character.isDigit(expression.charAt(i)) ||
+                       expression.charAt(i) == '.')) {
+
+                    number.append(expression.charAt(i));
+                    i++;
+                }
+
+                i--;
+                numbers.push(Double.parseDouble(number.toString()));
+            }
+
+            // Read exponential function e^
+            else if (expression.startsWith("e^", i)) {
+
+                i += 2;
+
+                int start = i;
+
+                while (i < expression.length() &&
+                      (Character.isDigit(expression.charAt(i)) ||
+                       expression.charAt(i) == '.')) {
+                    i++;
+                }
+
+                double x = Double.parseDouble(
+                    expression.substring(start, i)
+                );
+
+                numbers.push(applyFunction("e^", x));
+                i--;
+            }
+
+            // Read logarithm function log(...)
+            else if (expression.startsWith("log(", i)) {
+
+                i += 4;
+
+                StringBuilder number = new StringBuilder();
+
+                while (i < expression.length() &&
+                       expression.charAt(i) != ')') {
+
+                    number.append(expression.charAt(i));
+                    i++;
+                }
+
+                double x = Double.parseDouble(number.toString());
+
+                numbers.push(applyFunction("log", x));
+            }
+
+            // Read arithmetic operators
+            else if (ch == '+' || ch == '-' ||
+                     ch == '*' || ch == '/') {
+
+                while (!operators.empty() &&
+                       precedence(operators.peek()) >= precedence(ch)) {
+
+                    double b = numbers.pop();
+                    double a = numbers.pop();
+                    char op = operators.pop();
+
+                    numbers.push(applyOp(op, b, a));
+                }
+
+                operators.push(ch);
+            }
+
+            else {
+                throw new IllegalArgumentException("Invalid expression");
+            }
+        }
+
+        // Perform remaining operations
+        while (!operators.empty()) {
+
+            double b = numbers.pop();
+            double a = numbers.pop();
+            char op = operators.pop();
+
+            numbers.push(applyOp(op, b, a));
+        }
+
+        if (numbers.size() != 1)
+            throw new IllegalArgumentException("Invalid expression");
+
+        return numbers.pop();
+    }
+
+    // Main method
+    public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("====================================");
+        System.out.println("          STACK CALCULATOR");
+        System.out.println("====================================");
+        System.out.println("Supported operations:");
+        System.out.println("+  -  *  /  e^x  log(x)");
+        System.out.println("Examples: 10+5*2");
+        System.out.println("          e^2+10");
+        System.out.println("          log(10)+5");
+        System.out.println("Type exit to close.");
+
+        while (true) {
+
+            System.out.print("\nEnter expression: ");
+            String expression = sc.nextLine();
+
+            if (expression.equalsIgnoreCase("exit")) {
+                System.out.println("Calculator closed.");
+                break;
+            }
+
+            try {
+
+                double result = evaluate(expression);
+
+                System.out.println("Result: " + result);
+
+            } catch (Exception e) {
+
+                System.out.println("Invalid expression or calculation!");
+            }
+        }
+
+        sc.close();
+    }
+}
